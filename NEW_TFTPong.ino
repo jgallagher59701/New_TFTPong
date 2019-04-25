@@ -55,6 +55,11 @@ int myHeight = 0; //TFTscreen.height();
 
 int display_state = RE_PADDLE;  // starting state, push button toggles state
 
+int red = 255;
+int green = 255;
+int blue = 255;
+int hue = 0;
+
 void setup() {
   // Setup rotary encoder
   pinMode(APIN, INPUT);
@@ -119,10 +124,6 @@ void complete_push_button() {
   attachInterrupt(0, push_button, LOW); //use interrupt 0 (pin 2) and run function wake_up when pin 2 gets LOW
 }
 
-int red = 255;
-int green = 255;
-int blue = 255;
-
 void loop() 
 {
   if (pb_pushed) {
@@ -142,9 +143,13 @@ void loop()
   }
   else if (display_state == RE_COLOR) {
     int change = getEncoderTurn();
-    green += change * 10;
-    if (green > 255)
-      green = 255;
+    hue += change;
+    if (hue > 360)
+      hue = 360;
+    else if (hue < 10)
+      hue = 10;
+
+    update_color(hue);
   }
   
   // set the fill color to black and erase the previous
@@ -166,6 +171,59 @@ void loop()
   // update the ball's position and draw it on screen
   if (millis() % ballSpeed < 2) {
     moveBall();
+  }
+}
+
+// HSV to RGB
+// This will enable cycling colors that have full saturation and value.
+// See https://en.wikipedia.org/wiki/HSL_and_HSV
+
+// Given the value of Hue and assuming Saturation and Value are 1,
+// compute the value for each of the colors (RGB) over the interval 
+// [0,1]. Then scale the colors so they range from [0,255]. The 
+// value for hue should range between [0,360].
+int update_color(int hue) {
+  // since Sat and Value are both 1, there's no need to compute this. If we use
+  // a different chroma, use: c = value *  saturation;
+  float c = 1.0;
+  float h_prime = hue/60;
+  float x = c * (1 - abs(((int)h_prime % 2) - 1));
+
+  switch ((int)h_prime) {
+    case 0:
+      red = 255;
+      green = x * 255;
+      blue = 0;
+      break;
+    case 1:
+      red = x * 255;
+      green = 255;
+      blue = 0;
+      break;
+    case 2:
+      red = 0; 
+      green = 255;
+      blue = x * 255;
+      break;
+    case 3:
+      red = 0; 
+      green = x * 255;
+      blue = 255;
+      break;
+    case 4:
+      red = x * 255; 
+      green = 0;
+      blue = 255;
+      break;
+    case 5:
+      red = 255; 
+      green = 0;
+      blue = x * 255;
+      break;
+    default:
+      red = 0; 
+      green = 0;
+      blue = 0;
   }
 }
 
